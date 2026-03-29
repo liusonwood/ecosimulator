@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoSim - 生态演替模拟器</title>
-    <!-- 引入 Tailwind CSS (CDN版本，生产环境建议本地) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入本地库资源 (不再依赖外部 CDN，实现秒开) -->
+    <script src="./lib/tailwind.min.js"></script>
     <style>
         body {
             background-color: #000;
@@ -183,8 +183,8 @@
     <script src="./lib/vue.global.js"></script>
     <script src="./lib/gpu-browser.min.js"></script>
     <script src="./lib/chart.js"></script>
-    <!-- Lucide 图标库 -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Lucide 图标库 (本地版) -->
+    <script src="./lib/lucide.min.js"></script>
     
     <!-- 业务代码 -->
     <script src="main.js"></script>
