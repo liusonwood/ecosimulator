@@ -269,19 +269,18 @@ createApp({
             const cw = canvas.width / width;
             const ch = canvas.height / height;
 
-            const imageData = ctx.createImageData(canvas.width, canvas.height);
-            const data = imageData.data;
+            // 首先清空画布 (背景色 #111)
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            for (let y = 0; y < canvas.height; y++) {
-                const gy = Math.floor(y / ch);
-                for (let x = 0; x < canvas.width; x++) {
-                    const gx = Math.floor(x / cw);
+            for (let gy = 0; gy < height; gy++) {
+                for (let gx = 0; gx < width; gx++) {
                     const idx = (gy * width + gx) * CONFIG.numSpecies;
-                    const pixelIdx = (y * canvas.width + x) * 4;
-
-                    let r = 17, g = 17, b = 17;
+                    
+                    let r = 17, g = 17, b = 17; // 基准色 RGB(17, 17, 17)
                     let totalB = 0;
 
+                    // 计算该格子的混合颜色
                     for (let k = 0; k < CONFIG.numSpecies; k++) {
                         const biomass = simulator.value.biomass[idx + k];
                         if (biomass > 0.01) {
@@ -293,13 +292,18 @@ createApp({
                         }
                     }
 
-                    data[pixelIdx] = Math.min(255, r);
-                    data[pixelIdx + 1] = Math.min(255, g);
-                    data[pixelIdx + 2] = Math.min(255, b);
-                    data[pixelIdx + 3] = 255;
+                    // 只有当生物量大于阈值时才绘制，减少 GPU 提交
+                    if (totalB > 0.01) {
+                        ctx.fillStyle = `rgb(${Math.min(255, r)}, ${Math.min(255, g)}, ${Math.min(255, b)})`;
+                        // 直接绘制格子矩形
+                        ctx.fillRect(gx * cw, gy * ch, cw, ch);
+                        
+                        // 绘制格子边框 (半透明，增加网格感)
+                        ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+                        ctx.strokeRect(gx * cw, gy * ch, cw, ch);
+                    }
                 }
             }
-            ctx.putImageData(imageData, 0, 0);
         };
 
         const handleCanvasClick = (e) => {
