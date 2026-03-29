@@ -15,13 +15,13 @@ const CONFIG = {
         '#468843', // Shrub
         '#1B4332'  // Tree (Forest)
     ],
-    bgSeed: [0.2, 0.1, 0.02, 0.005, 0.001], // 高等物种背景种子极少
-    initialSeed: [0.8, 0.1, 0.01, 0.0, 0.0], // 初始状态几乎只有先锋种
+    bgSeed: [0.2, 0.1, 0.002, 0.001, 0.0005], // 再次降低高等物种的背景干扰
+    initialSeed: [1.0, 0.2, 0.0, 0.0, 0.0], 
     // Parameters from CSV
-    rho: [30.0, 100.0, 800.0, 400.0, 80.0],
+    rho: [30.0, 100.0, 150.0, 400.0, 80.0], // 降低草本产种量 (800 -> 150)
     lambda: [0.5, 0.8, 1.5, 3.0, 6.0],
     R_max: 5.0,
-    r: [0.3, 0.4, 1.2, 0.8, 0.2],
+    r: [0.3, 0.4, 0.6, 0.8, 0.2], // 降低草本生长率 (1.2 -> 0.6)
     g: [0.15, 0.2, 0.6, 0.4, 0.2],
     s: [0.6, 0.6, 0.2, 0.6, 0.7],
     nu: [0.045, 0.06, 0.18, 0.12, 0.06],
@@ -74,8 +74,8 @@ class EcoSimulator {
                     this.seedBank[idx + k] = CONFIG.initialSeed[k];
                     this.biomass[idx + k] = 0;
                 }
-                if (Math.random() < 0.1) {
-                    this.biomass[idx + 0] = Math.random() * 0.15 + 0.05;
+                if (Math.random() < 0.5) { // 提高分布比例
+                    this.biomass[idx + 0] = Math.random() * 0.2 + 0.1; // 提高初始盖度
                 }
             }
         }
@@ -151,8 +151,8 @@ class EcoSimulator {
                     let b_growth = this.biomass[idx + k] + CONFIG.r[k] * climateMults[k] * this.biomass[idx + k] * (1 - compSum / Math.max(0.01, k_local));
                     
                     // Step C: Germination with Succession Thresholds
-                    // Species k needs a minimum total biomass to represent "soil readiness"
-                    const thresholds = [0.0, 0.05, 0.15, 0.35, 0.55]; 
+                    // 提高门槛：先锋种必须积累足够生物量 (象征有机质) 高等种才能萌发
+                    const thresholds = [0.0, 0.1, 0.4, 0.55, 0.75]; 
                     let g_eff = CONFIG.g[k] * Math.max(0, 1 - totalB);
                     if (totalB < thresholds[k]) g_eff = 0; // Succession barrier: blocked if soil not ready
 
