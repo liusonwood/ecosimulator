@@ -122,6 +122,12 @@ class EcoSimulator {
         const h = this.height;
         const ns = this.numSpecies;
 
+        // 预计算全局总生物量，用于全局扩散
+        const globalBiomass = new Float32Array(ns);
+        for (let i = 0; i < w * h * ns; i += ns) {
+            for (let k = 0; k < ns; k++) globalBiomass[k] += this.biomass[i + k];
+        }
+
         for (let y = 0; y < h; y++) {
             for (let x = 0; x < w; x++) {
                 const idx = (y * w + x) * ns;
@@ -131,20 +137,27 @@ class EcoSimulator {
                 for (let k = 0; k < ns; k++) {
                     let sk = this.seedBank[idx + k] + CONFIG.bgSeed[k];
                     
-                    // Optimized dispersal using precomputed kernel
                     const kernelInfo = this.precomputedKernels[k];
-                    const r = kernelInfo.r;
-                    const kSize = kernelInfo.size;
-                    const kData = kernelInfo.data;
                     let dispersed = 0;
                     
-                    for (let dy = -r; dy <= r; dy++) {
-                        const ny = (y + dy + h) % h;
-                        for (let dx = -r; dx <= r; dx++) {
-                            const nx = (x + dx + w) % w;
-                            const nIdx = (ny * w + nx) * ns;
-                            const weight = kData[(dy + r) * kSize + (dx + r)];
-                            dispersed += this.biomass[nIdx + k] * CONFIG.rho[k] * weight * 0.01;
+                    // 优化：对于扩散范围极大的物种（如乔木），使用全局平均扩散
+                    if (kernelInfo.r >= Math.min(w, h) / 2) {
+                        dispersed = (globalBiomass[k] * CONFIG.rho[k] * 0.01) / (w * h);
+                    } else {
+                        const r = kernelInfo.r;
+                        const kSize = kernelInfo.size;
+                        const kData = kernelInfo.data;
+                        for (let dy = -r; dy <= r; dy++) {
+                            const ny = (y + dy + h) % h;
+                            for (let dx = -r; dx <= r; dx++) {
+                                const nx = (x + dx + w) % w;
+                                const nIdx = (ny * w + nx) * ns;
+                                const sourceB = this.biomass[nIdx + k];
+                                if (sourceB < 0.001) continue; // 剪枝：来源为空则跳过
+                                
+                                const weight = kData[(dy + r) * kSize + (dx + r)];
+                                dispersed += sourceB * CONFIG.rho[k] * weight * 0.01;
+                            }
                         }
                     }
                     sk += dispersed;
@@ -156,11 +169,9 @@ class EcoSimulator {
                     
                     let b_growth = this.biomass[idx + k] + CONFIG.r[k] * climateMults[k] * this.biomass[idx + k] * (1 - compSum / Math.max(0.01, k_local));
                     
-                    // Step C: Germination with Succession Thresholds
-                    // 极大幅提高门槛：先锋种必须积累足够生物量 (象征土壤有机质积累)
                     const thresholds = [0.0, 0.1, 0.4, 0.73, 0.85]; 
                     let g_eff = CONFIG.g[k] * Math.max(0, 1 - totalB);
-                    if (totalB < thresholds[k]) g_eff = 0; // Succession barrier: blocked if soil not ready
+                    if (totalB < thresholds[k]) g_eff = 0;
 
                     const b_germ = Math.min(sk * g_eff * 0.1 * climateMults[k], Math.max(0, 1 - totalB));
                     
