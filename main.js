@@ -112,7 +112,7 @@ class EcoSimulator {
             '温带草原气候': [1.0, 1.0, 1.0, 0.2, 0.0],
             '寒带苔原气候': [1.0, 1.0, 0.1, 0.0, 0.0],
             '温带落叶林气候': [0.9, 0.9, 0.9, 1.0, 0.95],
-            '荒漠气候': [1.0, 0.4, 0.2, 0.1, 0.0]
+            '荒漠气候': [1.0, 0.6, 0.2, 0.1, 0.0]
         };
         const currentMults = (climateMults[this.currentClimate] || climateMults['热带雨林气候']).map(m => m * yearlyFluctuation);
         
@@ -410,7 +410,7 @@ createApp({
             if (!simulator.value) return;
             const cx = CONFIG.gridWidth / 2;
             const cy = CONFIG.gridHeight / 2;
-            if (type === 'fire') simulator.value.applyDisturbance(cx, cy, 5, [0.2, 0.3, 0.95, 0.6, 0.9], 0.5);
+            if (type === 'fire') simulator.value.applyDisturbance(cx, cy, 5, [0.45, 0.6, 0.95, 0.6, 0.9], 0.5);
             else if (type === 'volcano') simulator.value.applyDisturbance(cx, cy, 17, [1, 1, 1, 1, 1], 1);
             else if (type === 'drought') simulator.value.applyDisturbance(cx, cy, 40, [0.1, 0.2, 0.5, 0.2, 0.6], 0.1);
             render();
