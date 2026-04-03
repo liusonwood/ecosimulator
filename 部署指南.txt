@@ -10,7 +10,8 @@ EcoSim 生态模拟器 - 部署指南 (Deployment Guide)
 .
 ├── index.html          # 主页面入口
 ├── main.js             # 模拟逻辑与 UI 控制
-└──lib/                # 关键第三方库本地备份 (Vue, GPU.js, Chart.js, Lucide)
+├── wokers.js           # 负责并行执行 CPU 演替逻辑
+└──lib/                 # 关键第三方库本地备份 (Vue, GPU.js, Chart.js, Lucide)
 
 二、 部署方案
 ----------------
