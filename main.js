@@ -326,7 +326,7 @@ class EcoSimulator {
             '农场': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
             '温带草原气候': [1.0, 1.3, 1.0, 0.2, 0.0, 1.0],
             '寒带苔原气候': [1.0, 1.0, 0.3, 0.0, 0.0, 0.3],
-            '荒漠气候': [1.0, 0.2, 0.05, 0.0, 0.0, 0.05]
+            '荒漠气候': [0.9, 0.2, 0.05, 0.0, 0.0, 0.05]
         };
         const currentMults = (climateMults[this.currentClimate] || climateMults['热带雨林气候']).map(m => m * yearlyFluctuation);
         
@@ -549,7 +549,7 @@ createApp({
         const state = reactive({
             running: false,
             year: 0,
-            speed: 1.0,
+            speed: 0.6,
             climate: '热带雨林气候',
             hoverData: null,
             visualDisturbances: []
