@@ -14,9 +14,9 @@ const CONFIG = {
     speciesNames: ['地衣', '苔藓', '草本', '灌木', '乔木'],
     colors: [                   // 各物种在地图上显示的颜色 (十六进制)
         '#6E7C88', // 地衣 (先锋种)
-        '#599F2F', // 苔藓 (地被种)
+        '#709f2f', // 苔藓 (地被种)
         '#41aa46', // 草本 (竞争种)
-        '#468843', // 灌木 (过渡种)
+        '#3e773b', // 灌木 (过渡种)
         '#1B4332'  // 乔木 (顶极种)
     ],
     bgSeed: [0.002, 0.0000001, 0.000005, 0.0000001, 0.0000005], // 背景种子雨：每年随机落入格子的种子量 (模拟远距离传播)
@@ -24,27 +24,27 @@ const CONFIG = {
     
     // 物种生物学参数 (按 [地衣, 苔藓, 草本, 灌木, 乔木] 顺序排列)
     rho: [30.0, 100.0, 50.0, 200.0, 80.0],       // 繁殖力 (ρ)：单位盖度每年产生的种子数
-    lambda: [0.5, 0.8, 1.5, 3.0, 6.0],           // 扩散距离 (λ)：种子扩散的标准差 (单位: 格子)
+    lambda: [0.5, 0.8, 1.5, 4.0, 6.0],           // 扩散距离 (λ)：种子扩散的标准差 (单位: 格子)
     R_max: 9.0,                                  // 最大扩散半径：计算扩散时的截断距离 (格子数)
     r: [0.3, 0.4, 0.3, 0.6, 0.2],                // 增长率 (r)：物种的最大年增长速度
-    g: [0.15, 0.2, 0.6, 0.4, 0.4],               // 萌发率 (g)：种子在空白处成功萌发的概率
+    g: [0.15, 0.4, 0.6, 0.4, 0.4],               // 萌发率 (g)：种子在空白处成功萌发的概率
     s: [0.6, 0.6, 0.2, 0.7, 0.6],                // 种子库存活率 (s)：未萌发种子的年存活率
-    nu: [0.045, 0.06, 0.18, 0.12, 0.06],         // 库萌发率 (ν)：种子库中种子后续萌发的概率
-    K_base: [0.3, 0.4, 0.7, 0.8, 0.95],          // 基础承载力 (K)：物种能达到的最大理论盖度
+    nu: [0.045, 0.06, 0.1, 0.12, 0.06],         // 库萌发率 (ν)：种子库中种子后续萌发的概率
+    K_base: [0.3, 0.46, 0.7, 0.8, 0.95],          // 基础承载力 (K)：物种能达到的最大理论盖度
     
     // 竞争矩阵 (alpha[k][l])：物种 l 对物种 k 的抑制系数
     alpha: [
         [1.0, 1.2, 2.0, 2.5, 3.3], // 地衣受其他物种抑制强 (遮荫效应)
-        [0.4, 1.0, 0.5, 1.8, 2.3],  // 苔藓受更高阶物种抑制
-        [0.2, 0.25, 1.0, 1.5, 3.4],  // 草本受灌木/乔木抑制
-        [0.1, 0.1, 0.2, 1.0, 1.5],  // 灌木受乔木抑制
+        [0.4, 1.0, 1.0, 1.8, 2.3],  // 苔藓受更高阶物种抑制
+        [0.2, 0.3, 1.0, 1.5, 3.4],  // 草本受灌木/乔木抑制
+        [0.1, 0.1, 0.3, 1.0, 1.3],  // 灌木受乔木抑制
         [0.01, 0.01, 0.05, 0.1, 1.0] // 乔木 (顶极种) 几乎不受早期物种影响
     ],
 
     // 土壤响应乘子 (soilMult[k][depth])：不同土壤深度对 K 的修正系数
     soilMult: [
         [1.0, 0.8, 0.6],  // 地衣: 偏好浅土
-        [0.9, 1.0, 0.8],  // 苔藓: 适应性广
+        [1.0, 1.0, 1.0],  // 苔藓: 适应性广
         [0.4, 0.7, 0.8],  // 草本: 偏好深土
         [0.4, 0.9, 1.0],  // 灌木: 依赖深土
         [0.02, 0.3, 1.0]  // 乔木: 必须有深土
@@ -592,6 +592,7 @@ createApp({
                     const centerX = px + cw / 2;
                     const idx = (gy * width + gx) * CONFIG.numSpecies;
                     
+                    let r = 17, g = 17, b = 17;
                     let totalB = 0;
                     let maxB = 0;
                     let dominantK = -1;
@@ -599,6 +600,10 @@ createApp({
                     for (let k = 0; k < CONFIG.numSpecies; k++) {
                         const biomass = simulator.value.biomass[idx + k];
                         if (biomass > 0.01) {
+                            const c = speciesRgb[k];
+                            r += (c.r - 17) * biomass;
+                            g += (c.g - 17) * biomass;
+                            b += (c.b - 17) * biomass;
                             totalB += biomass;
                             if (biomass > maxB) {
                                 maxB = biomass;
@@ -607,14 +612,7 @@ createApp({
                         }
                     }
 
-                    if (dominantK !== -1 && maxB > 0.01) {
-                        const c = speciesRgb[dominantK];
-                        // 依然保留根据生物量调整亮度的逻辑，但只取优势种颜色
-                        const factor = Math.min(1, maxB * 1.5); 
-                        const r = 17 + (c.r - 17) * factor;
-                        const g = 17 + (c.g - 17) * factor;
-                        const b = 17 + (c.b - 17) * factor;
-
+                    if (totalB > 0.01) {
                         ctx.fillStyle = `rgb(${r|0},${g|0},${b|0})`;
                         ctx.fillRect(px, py, cw, ch);
                         ctx.strokeRect(px, py, cw, ch);
@@ -711,8 +709,8 @@ createApp({
                         legend: { display: false },
                         tooltip: {
                             backgroundColor: 'rgba(13, 13, 13, 0.9)',
-                            titleFont: { size: 13, weight: 'bold', family: '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Arial", sans-serif' },
-                            bodyFont: { size: 12, family: '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Arial", sans-serif' },
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
                             padding: 10,
                             borderColor: 'rgba(255, 255, 255, 0.1)',
                             borderWidth: 1,
@@ -759,7 +757,7 @@ createApp({
             let radius = 5;
             if (type === 'fire') {
                 radius = 5;
-                simulator.value.applyDisturbance(cx, cy, radius, [0.4, 0.5, 0.7, 0.99, 1.0], 0.9);
+                simulator.value.applyDisturbance(cx, cy, radius, [0.4, 0.5, 0.78, 0.99, 1.0], 0.9);
             } else if (type === 'volcano') {
                 radius = 17;
                 simulator.value.applyDisturbance(cx, cy, radius, [1, 1, 1, 1, 1], 1);
