@@ -592,7 +592,6 @@ createApp({
                     const centerX = px + cw / 2;
                     const idx = (gy * width + gx) * CONFIG.numSpecies;
                     
-                    let r = 17, g = 17, b = 17;
                     let totalB = 0;
                     let maxB = 0;
                     let dominantK = -1;
@@ -600,10 +599,6 @@ createApp({
                     for (let k = 0; k < CONFIG.numSpecies; k++) {
                         const biomass = simulator.value.biomass[idx + k];
                         if (biomass > 0.01) {
-                            const c = speciesRgb[k];
-                            r += (c.r - 17) * biomass;
-                            g += (c.g - 17) * biomass;
-                            b += (c.b - 17) * biomass;
                             totalB += biomass;
                             if (biomass > maxB) {
                                 maxB = biomass;
@@ -612,7 +607,14 @@ createApp({
                         }
                     }
 
-                    if (totalB > 0.01) {
+                    if (dominantK !== -1 && maxB > 0.01) {
+                        const c = speciesRgb[dominantK];
+                        // 依然保留根据生物量调整亮度的逻辑，但只取优势种颜色
+                        const factor = Math.min(1, maxB * 1.5); 
+                        const r = 17 + (c.r - 17) * factor;
+                        const g = 17 + (c.g - 17) * factor;
+                        const b = 17 + (c.b - 17) * factor;
+
                         ctx.fillStyle = `rgb(${r|0},${g|0},${b|0})`;
                         ctx.fillRect(px, py, cw, ch);
                         ctx.strokeRect(px, py, cw, ch);
