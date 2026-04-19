@@ -681,9 +681,9 @@ createApp({
 
                         if (dominantK !== -1) {
                             ctx.globalAlpha = 0.6;
-                            // 草本 (index 2) 和 农作物 (index 5) 的图标大小保持恒定，其他物种随盖度变化
+                            // 草本 (index 2) 和 农作物 (index 5) 的图标大小变化幅度小，其他物种随盖度变化
                             const fontSize = (dominantK === 2 || dominantK === 5) 
-                                ? minCellSize * 0.7 
+                                ? minCellSize * (0.7 + 0.3 * maxB)
                                 : minCellSize * (0.3 + 0.7 * maxB);
                             ctx.font = `${fontSize}px Arial`;
                             ctx.fillText(CONFIG.icons[dominantK], centerX, centerY);
