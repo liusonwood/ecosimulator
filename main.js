@@ -139,7 +139,7 @@ class EcoSimulator {
                         this.seedBank[idx + k] = CONFIG.initialSeed[k];
                         this.biomass[idx + k] = 0;
                     }
-                    // 边界生成混合植被模拟自然围栏
+                    // 农场边界生成混合植被模拟自然围栏
                     const isBorder = (x === 0 || x === this.width - 1 || y === 0 || y === this.height - 1);
                     if (isBorder) {
                         this.biomass[idx + 2] = 0.5 + Math.random() * 0.2; // 草本
@@ -159,7 +159,7 @@ class EcoSimulator {
                         this.biomass[idx + k] = 0;
                     }
                     if (Math.random() < 0.5) { 
-                        this.biomass[idx + 0] = Math.random() * 0.2 + 0.1; 
+                        this.biomass[idx + 0] = Math.random() * 0.1 + 0.1; 
                     }
                 }
             }
