@@ -28,17 +28,19 @@ EcoSim 生态模拟器 - 部署指南 (Deployment Guide)
 Q: 页面显示“初始化失败”？
 A: 请检查浏览器控制台 (F12)。通常是由于 lib/ 目录下的某个 .js 文件未能成功加载导致的。
 
-五、 本地打包 (Electron)
-----------------
-本项目支持构建为桌面客户端。请确保已安装 Node.js 环境。
+五、 本地打包 (Windows x64)
+--------------------------
+本项目支持构建为 Windows 桌面客户端。请确保已安装 Node.js 环境。
 
 1. 安装依赖：
    npm install
 
-2. 执行 Windows 打包（生成 exe）：
+2. 执行打包命令：
    npm run build:win
-
-3. 执行 macOS 打包（生成 dmg/zip）：
    npm run build:mac
 
-生成的打包文件位于 dist/ 目录。
+
+3. 查看构建产物：
+   打包完成后，产物位于 `dist/` 目录中
+
+注意：`dist/` 目录已被配置在 `.gitignore` 中，不会被提交至代码仓库。
