@@ -41,7 +41,7 @@ canvas {
     background: rgba(0, 0, 0, 0.8);
     padding: 8px;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 14px;
     border: 1px solid #444;
 }
 input[type="range"] {

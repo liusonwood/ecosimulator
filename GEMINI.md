@@ -44,6 +44,8 @@ The project is designed to run directly from the file system.
 -   **Surgical Edits:** Use the `replace` tool for targeted updates to `main.js` and `index.html`.
 -   **Centralized Configuration:** All adjustable parameters and the version number are managed in the `CONFIG` object within `main.js`.
 -   **Comments:** Maintain detailed Chinese documentation within `main.js` to explain the mathematical models.
+-   **Desktop Builds:** Electron packaging is managed via `electron-builder`. Use `npm run build:win` for Windows and `npm run build:mac` for macOS. All new dependencies must be added to the `files` array in the `build` configuration of `package.json`.
+
 
 ## Key Files and Directories
 

@@ -30,11 +30,6 @@
             
             <!-- 左上模块：地图区域 (Map Panel) -->
             <div class="col-span-8 row-span-4 glass relative overflow-hidden flex items-center justify-center p-2">
-                <div v-if="!simulator" class="text-red-400 text-center p-8 glass bg-red-500/10">
-                    <i data-lucide="alert-triangle" class="w-12 h-12 mx-auto mb-4"></i>
-                    <p class="font-bold">初始化失败 / Initialization Failed</p>
-                    <p class="text-xs opacity-60 mt-2">请检查浏览器控制台或库文件(lib/)是否完整</p>
-                </div>
                 <canvas 
                     v-show="simulator"
                     ref="canvasRef" 
@@ -61,26 +56,18 @@
 
             <!-- 右上模块：控制面板 (Control Panel) -->
             <div class="col-span-4 row-span-4 glass p-6 flex flex-col gap-6 overflow-y-auto custom-scroll">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <img src="android-chrome-512x512.png" class="w-12 h-12 rounded-xl border border-white/10" alt="EcoSim Logo">
                     <div>
-                        <h1 class="text-3xl font-black tracking-tighter text-white/90 leading-none">ECOSIM-生态演替模拟</h1>
-                        <p class="text-[10px] text-white/60 tracking-widest mt-1 uppercase">制作者：上海市杨浦高级中学 刘子木 林炎逸</p>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-sm font-mono text-white/50">v{{ CONFIG.version }}</div>
-                        <a href="https://github.com/liusonwood/ecosimulator" target="_blank">
-                        <div class="text-[9px] text-white/20 cursor-pointer hover:text-white/40 transition-colors">
-                            2026
-                        </div>
-                    </a>
+                        <h1 class="text-3xl font-black tracking-tighter text-white/90 leading-none">ECOSIM - 生态演替模拟器</h1>
                     </div>
                 </div>
 
                 <!-- 气候选择 -->
                 <div>
-                    <label class="block text-xs uppercase tracking-widest text-white/40 mb-2">气候类型 / Climate</label>
-                    <select v-model="state.climate" class="w-full bg-white/10 border border-white/10 rounded-lg p-2 text-sm outline-none focus:border-green-500/50">
-                        <option v-for="c in climates" :key="c" :value="c" class="bg-zinc-900">{{ c }}</option>
+                    <label class="block text-sm uppercase tracking-widest text-white/40 mb-2">气候类型</label>
+                    <select v-model="state.climate" class="w-full bg-white/10 border border-white/10 rounded-lg p-2 text-base outline-none focus:border-green-500/50">
+                        <option v-for="c in climates" :key="c" :value="c" class="bg-zinc-900 text-base">{{ c }}</option>
                     </select>
                 </div>
 
@@ -88,7 +75,7 @@
                 <div class="flex items-center gap-4">
                     <button @click="togglePlay" class="flex-1 bg-white/10 hover:bg-white/20 p-3 rounded-xl flex items-center justify-center gap-2 transition-all">
                         <i :data-lucide="state.running ? 'pause' : 'play'" class="w-5 h-5"></i>
-                        <span class="font-bold">{{ state.running ? '暂停' : '开始' }}</span>
+                        <span class="font-bold text-base">{{ state.running ? '暂停' : '开始' }}</span>
                     </button>
                     <button @click="reset" class="p-3 rounded-xl bg-white/5 hover:bg-red-500/20 transition-all">
                         <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
@@ -96,15 +83,15 @@
                 </div>
 
                 <div class="flex justify-between items-end border-t border-white/10 pt-4">
-                    <div class="text-xs uppercase tracking-widest text-white/40">模拟时长 / Time</div>
+                    <div class="text-sm uppercase tracking-widest text-white/40">模拟时长</div>
                     <div class="text-2xl font-mono">{{ state.year }} <span class="text-xs text-white/30">YEARS</span></div>
                 </div>
 
                 <!-- 速度调节 -->
                 <div>
-                    <div class="flex justify-between text-[10px] uppercase tracking-widest text-white/40 mb-2">
+                    <div class="flex justify-between text-xs uppercase tracking-widest text-white/40 mb-2">
                         <i data-lucide="turtle" class="w-4 h-4"></i>
-                        <span>演替速度 / Speed</span>
+                        <span>演替速度</span>
                         <i data-lucide="rabbit" class="w-4 h-4"></i>
                     </div>
                     <input type="range" v-model.number="state.speed" min="0.1" max="5" step="0.1" class="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer">
@@ -112,11 +99,11 @@
 
                 <!-- 干扰事件 -->
                 <div class="mt-auto">
-                    <label class="block text-xs uppercase tracking-widest text-white/40 mb-3">干扰事件 / Disturbance</label>
+                    <label class="block text-sm uppercase tracking-widest text-white/40 mb-3">干扰事件 </label>
                     <div class="grid grid-cols-3 gap-2">
-                        <button @click="applyDisturbance('fire')" class="bg-orange-500/20 hover:bg-orange-500/40 border border-orange-500/30 p-2 rounded-lg text-xs font-bold transition-all">火灾/FIRE</button>
-                        <button @click="applyDisturbance('volcano')" class="bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 p-2 rounded-lg text-xs font-bold transition-all">火山/VOLCANO</button>
-                        <button @click="applyDisturbance('drought')" class="bg-yellow-500/20 hover:bg-yellow-500/40 border border-yellow-500/30 p-2 rounded-lg text-xs font-bold transition-all">干旱/DROUGHT</button>
+                        <button @click="applyDisturbance('fire')" class="bg-orange-500/20 hover:bg-orange-500/40 border border-orange-500/30 p-2 rounded-lg text-sm font-bold transition-all">火灾</button>
+                        <button @click="applyDisturbance('volcano')" class="bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 p-2 rounded-lg text-sm font-bold transition-all">火山</button>
+                        <button @click="applyDisturbance('drought')" class="bg-yellow-500/20 hover:bg-yellow-500/40 border border-yellow-500/30 p-2 rounded-lg text-sm font-bold transition-all">干旱</button>
                     </div>
                 </div>
             </div>
@@ -130,18 +117,18 @@
                 
                 <!-- 右侧说明 -->
                 <div class="flex-[3] border-l border-white/10 pl-6 flex flex-col justify-center gap-3">
-                    <h3 class="text-xs uppercase tracking-widest text-white/40 mb-1">群落组成 / Legend</h3>
+                    <h3 class="text-sm uppercase tracking-widest text-white/40 mb-1">群落组成</h3>
                     <div class="grid grid-cols-2 gap-x-4 gap-y-2">
                         <div v-for="(name, i) in CONFIG.speciesNames" :key="name" 
                              v-show="i < 5 || state.climate === '农场'" 
-                             class="flex items-center gap-2 text-xs">
+                             class="flex items-center gap-2 text-sm">
                             <div class="w-6 h-6 flex items-center justify-center rounded bg-white/5 text-xs" :title="name">
                                 {{ CONFIG.icons[i] }}
                             </div>
                             <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: CONFIG.colors[i] }"></div>
                             <span class="text-white/70">{{ name }}</span>
                         </div>
-                        <div class="flex items-center gap-2 text-xs">
+                        <div class="flex items-center gap-2 text-sm">
                             <div class="w-6 h-6 flex items-center justify-center rounded bg-white/5 text-xs">
                              ◼️   
                             </div>
