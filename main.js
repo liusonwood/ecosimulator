@@ -54,6 +54,16 @@ const CONFIG = {
         [0.4, 0.7, 0.8]   // 农作物
     ],
     thresholds: [0.0, 0.1, 0.4, 0.73, 0.85, 0.4], 
+
+    // 不同气候下的土壤深度分布比例 (浅, 中, 深)
+    soilDepthProportions: {
+        '热带雨林气候': [0.1, 0.3, 0.6],
+        '温带草原气候': [0.3, 0.5, 0.2],
+        '寒带苔原气候': [0.7, 0.25, 0.05],
+        '荒漠气候': [0.9, 0.1, 0.0],
+        '农场': [0.05, 0.35, 0.6],
+        'default': [0.3, 0.4, 0.3]
+    },
     icons: ['🪨', '🌱', '🌿', '🌳', '🌲', '🌾'] // 物种对应的图标
 };
 
@@ -116,12 +126,13 @@ class EcoSimulator {
             scores = nextScores;
         }
 
-        // 使用分位数映射：确保固定比例（30% 浅, 40% 中, 30% 深）以保证模拟多样性
+        // 使用分位数映射：根据气候类型动态调整土壤深度比例（浅, 中, 深）
+        const props = CONFIG.soilDepthProportions[this.currentClimate] || CONFIG.soilDepthProportions['default'];
         const indexedScores = Array.from(scores).map((v, i) => ({ v, i }));
         indexedScores.sort((a, b) => a.v - b.v);
 
-        const p1 = Math.floor(total * 0.3); // 浅土阈值
-        const p2 = Math.floor(total * 0.7); // 中土阈值
+        const p1 = Math.floor(total * props[0]); // 浅土阈值
+        const p2 = Math.floor(total * (props[0] + props[1])); // 中土阈值
 
         for (let i = 0; i < total; i++) {
             const gridIdx = indexedScores[i].i;
@@ -397,9 +408,9 @@ class EcoSimulator {
         const climateMults = {
             '热带雨林气候': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
             '农场': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-            '温带草原气候': [1.0, 1.3, 1.0, 0.2, 0.0, 1.0],
-            '寒带苔原气候': [1.0, 1.0, 0.3, 0.0, 0.0, 0.3],
-            '荒漠气候': [0.9, 0.2, 0.05, 0.0, 0.0, 0.05]
+            '温带草原气候': [1.0, 1.3, 1.0, 0.00, 0.0, 0.0],
+            '寒带苔原气候': [1.0, 1.0, 0.3, 0.0, 0.0, 0.0],
+            '荒漠气候': [0.9, 0.2, 0.05, 0.0, 0.0, 0.0]
         };
         const currentMults = (climateMults[this.currentClimate] || climateMults['热带雨林气候']).map(m => m * yearlyFluctuation);
         
