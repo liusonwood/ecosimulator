@@ -1,4 +1,4 @@
-# EcoSim - 生态演替模拟数学模型 (EcoSimulator v3.2)
+# EcoSim - 生态演替模拟数学模型 (EcoSimulator v3.3.1)
 
 ## 1. 模型背景与网格定义
 - **网格系统**：建立一个 $W \times H$ 的二维网格（当前默认 $20 \times 13$）。

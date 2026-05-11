@@ -1,4 +1,4 @@
-# EcoSim - 生态演替模拟器 (Ecological Succession Simulator)
+# EcoSim - 生态演替模拟器 (Ecological Succession Simulator) v3.3.1
 
 EcoSim 是一个空间显式（Spatially Explicit）的植被动力学模拟系统，旨在通过数学模型模拟从地衣（Lichen）到成熟森林（Tree），乃至农田生态系统的全过程。
 
