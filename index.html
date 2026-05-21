@@ -45,7 +45,7 @@
                 <div v-if="state.hoverData" class="tooltip" :style="{ left: '10px', top: '10px' }">
                     <div class="font-bold border-b border-white/20 mb-1 pb-1">
                         坐标: {{ state.hoverData.x }}, {{ state.hoverData.y }} 
-                    </br> 土壤: {{ state.hoverData.soil }}
+                    <br> 土壤: {{ state.hoverData.soil }}
                     </div>
                     <div v-for="s in state.hoverData.species" :key="s.name" class="flex justify-between gap-4">
                         <span>{{ s.name }}:</span>
@@ -151,12 +151,10 @@
     <script src="main.js"></script>
     
     <script>
-        // 初始化图标
+        // 首次加载初始化图标 (后续由 Vue onUpdated 钩子自动刷新)
         window.addEventListener('load', () => {
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         });
-        // 监控 Vue 状态变化重新渲染图标
-        // 这里为了简单，直接在 Vue 逻辑中手动处理或使用现有的图标
     </script>
 </body>
 </html>

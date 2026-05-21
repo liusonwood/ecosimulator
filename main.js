@@ -44,7 +44,7 @@ const CONFIG = {
         [0.2, 0.3, 1.3, 1.5, 3.4, 1.0]  // 农作物
     ],
 
-    // 土壤响应乘子 (soilMult[k][depth])：不同土壤深度对 K 的修正修正系数
+    // 土壤响应乘子 (soilMult[k][depth])：不同土壤深度对 K 的修正系数
     soilMult: [
         [1.0, 0.8, 0.6],  // 地衣
         [1.0, 1.0, 1.0],  // 苔藓
@@ -64,7 +64,16 @@ const CONFIG = {
         '农场': [0.05, 0.35, 0.6],
         'default': [0.3, 0.4, 0.3]
     },
-    icons: ['🪨', '🌱', '🌿', '🌳', '🌲', '🌾'] // 物种对应的图标
+    icons: ['🪨', '🌱', '🌿', '🌳', '🌲', '🌾'], // 物种对应的图标
+
+    // 气候乘子 (climateMults)：不同气候对各物种增长率的缩放系数
+    climateMults: {
+        '热带雨林气候': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        '农场': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        '温带草原气候': [1.0, 1.3, 1.0, 0.00, 0.0, 0.0],
+        '寒带苔原气候': [1.0, 1.0, 0.3, 0.0, 0.0, 0.0],
+        '荒漠气候': [0.9, 0.2, 0.05, 0.0, 0.0, 0.0]
+    }
 };
 
 /**
@@ -95,6 +104,11 @@ class EcoSimulator {
         this.initGrid();    // 初始化地形和土壤
         this.initKernels(); // 初始化 GPU 计算内核
         this.initWorkers(); // 初始化 Web Workers 线程池
+
+        // 预分配 GPU 2D 视图数组 (E1: 避免每帧 GC 压力)
+        this.biomass2D = new Array(this.height);
+        this.seedBank2D = new Array(this.height);
+        this.soilDepth2D = new Array(this.height);
     }
 
     /**
@@ -307,6 +321,19 @@ class EcoSimulator {
     }
 
     /**
+     * 计算全局生物量总和 (各物种在全网格上的累计值)
+     * 被 GPU/Worker/Serial 三个引擎共用。
+     */
+    computeGlobalBiomass() {
+        const ns = this.numSpecies;
+        const globalBiomass = new Float32Array(ns);
+        for (let i = 0; i < this.biomass.length; i += ns) {
+            for (let k = 0; k < ns; k++) globalBiomass[k] += this.biomass[i + k];
+        }
+        return globalBiomass;
+    }
+
+    /**
      * 初始化 Web Workers
      * 用于在不支持 WebGL 或用户禁用 GPU 时的多核并行计算。
      */
@@ -336,7 +363,6 @@ class EcoSimulator {
                         for (let k = 0; k < numSpecies; k++) totalB += biomass[inIdxBase + k];
 
                         for (let k = 0; k < numSpecies; k++) {
-                            // ... (逻辑与 GPU 内核保持高度一致)
                             const lambda_k = CONFIG.lambda[k];
                             const r_limit = Math.ceil(lambda_k * 2);
                             let dispersed = 0;
@@ -405,14 +431,8 @@ class EcoSimulator {
      */
     async step() {
         const yearlyFluctuation = 1.0 + (Math.random() * 0.3 - 0.15); // 年度气候随机波动
-        const climateMults = {
-            '热带雨林气候': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-            '农场': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-            '温带草原气候': [1.0, 1.3, 1.0, 0.00, 0.0, 0.0],
-            '寒带苔原气候': [1.0, 1.0, 0.3, 0.0, 0.0, 0.0],
-            '荒漠气候': [0.9, 0.2, 0.05, 0.0, 0.0, 0.0]
-        };
-        const currentMults = (climateMults[this.currentClimate] || climateMults['热带雨林气候']).map(m => m * yearlyFluctuation);
+        const baseMults = CONFIG.climateMults[this.currentClimate] || CONFIG.climateMults['热带雨林气候'];
+        const currentMults = baseMults.map(m => m * yearlyFluctuation);
         
         // 计算优先级选择
         let mode = this.forceMode;
@@ -447,17 +467,21 @@ class EcoSimulator {
         const ns = this.numSpecies;
         const workerCount = this.workers.length;
         const rowsPerWorker = Math.ceil(h / workerCount);
+        const globalBiomass = this.computeGlobalBiomass();
 
-        const globalBiomass = new Float32Array(ns);
-        for (let i = 0; i < this.biomass.length; i += ns) {
-            for (let k = 0; k < ns; k++) globalBiomass[k] += this.biomass[i + k];
-        }
-
-        const promises = this.workers.map((worker, i) => {
-            return new Promise((resolve) => {
-                const startY = i * rowsPerWorker;
-                const endY = Math.min(h, (i + 1) * rowsPerWorker);
-                worker.onmessage = (e) => resolve(e.data);
+        const promises = [];
+        for (let i = 0; i < workerCount; i++) {
+            const startY = i * rowsPerWorker;
+            const endY = Math.min(h, (i + 1) * rowsPerWorker);
+            if (startY >= endY) continue; // C1: 跳过空分片
+            const worker = this.workers[i];
+            promises.push(new Promise((resolve) => {
+                // C2: 一次性 listener 防竞态
+                const handler = (e) => {
+                    worker.removeEventListener('message', handler);
+                    resolve(e.data);
+                };
+                worker.addEventListener('message', handler);
                 worker.postMessage({
                     startY, endY, width: w, height: h, numSpecies: ns,
                     biomass: this.biomass,
@@ -466,8 +490,8 @@ class EcoSimulator {
                     climateMults, globalBiomass, CONFIG,
                     randSeed: Math.random() * 1000
                 });
-            });
-        });
+            }));
+        }
 
         const results = await Promise.all(promises);
         // 将各线程计算出的结果片段合并回主线程的 TypedArray
@@ -487,23 +511,18 @@ class EcoSimulator {
         const h = this.height;
         const ns = this.numSpecies;
         const ns2 = ns * 2;
+        const globalBiomass = this.computeGlobalBiomass();
 
-        const globalBiomass = new Float32Array(ns);
-        for (let i = 0; i < this.biomass.length; i += ns) {
-            for (let k = 0; k < ns; k++) globalBiomass[k] += this.biomass[i + k];
-        }
-
-        // 将一维 TypedArray 转换为 GPU.js 要求的二维数组结构
-        const biomass2D = [], seedBank2D = [], soilDepth2D = [];
+        // E1: 复用预分配的 2D 视图数组 (subarray 本身是零拷贝视图)
         for (let y = 0; y < h; y++) {
-            biomass2D.push(this.biomass.subarray(y * w * ns, (y + 1) * w * ns));
-            seedBank2D.push(this.seedBank.subarray(y * w * ns, (y + 1) * w * ns));
-            soilDepth2D.push(this.soilDepth.subarray(y * w, (y + 1) * w));
+            this.biomass2D[y] = this.biomass.subarray(y * w * ns, (y + 1) * w * ns);
+            this.seedBank2D[y] = this.seedBank.subarray(y * w * ns, (y + 1) * w * ns);
+            this.soilDepth2D[y] = this.soilDepth.subarray(y * w, (y + 1) * w);
         }
 
         // 执行演替内核
         const unnormalized = this.simulationKernel(
-            biomass2D, seedBank2D, soilDepth2D, climateMults, globalBiomass,
+            this.biomass2D, this.seedBank2D, this.soilDepth2D, climateMults, globalBiomass,
             CONFIG.rho, CONFIG.lambda, CONFIG.r, CONFIG.g, CONFIG.s, CONFIG.K_base,
             CONFIG.alpha, CONFIG.soilMult, CONFIG.bgSeed, CONFIG.thresholds,
             Math.random() * 1000, w, h
@@ -537,11 +556,7 @@ class EcoSimulator {
         const w = this.width;
         const h = this.height;
         const ns = this.numSpecies;
-
-        const globalBiomass = new Float32Array(ns);
-        for (let i = 0; i < w * h * ns; i += ns) {
-            for (let k = 0; k < ns; k++) globalBiomass[k] += this.biomass[i + k];
-        }
+        const globalBiomass = this.computeGlobalBiomass();
 
         for (let y = 0; y < h; y++) {
             for (let x = 0; x < w; x++) {
@@ -627,10 +642,10 @@ class EcoSimulator {
      * 强制清空原始植被并种植农作物。
      */
     addRandomFarmland() {
-        const fw = Math.floor(Math.random() * (this.width / 3)) + 8; // 随机宽度
-        const fh = Math.floor(Math.random() * (this.height / 3)) + 6; // 随机高度
-        const startX = Math.floor(Math.random() * (this.width - fw));
-        const startY = Math.floor(Math.random() * (this.height - fh));
+        const fw = Math.min(Math.floor(Math.random() * (this.width / 3)) + 8, this.width); // C3: 边界保护
+        const fh = Math.min(Math.floor(Math.random() * (this.height / 3)) + 6, this.height);
+        const startX = Math.floor(Math.random() * Math.max(1, this.width - fw));
+        const startY = Math.floor(Math.random() * Math.max(1, this.height - fh));
 
         for (let y = startY; y < startY + fh; y++) {
             for (let x = startX; x < startX + fw; x++) {
@@ -645,7 +660,7 @@ class EcoSimulator {
     }
 }
 
-const { createApp, ref, onMounted, reactive, watch } = Vue;
+const { createApp, ref, onMounted, onUpdated, reactive, watch, nextTick } = Vue;
 
 /**
  * Vue 应用根组件
@@ -700,7 +715,7 @@ createApp({
             state.year = 0;
             state.running = false;
             state.visualDisturbances = [];
-            Vue.nextTick(() => {
+            nextTick(() => {
                 initChart();
                 updateChart(); // 初始记录 Year 0 的数据
                 render();
@@ -984,8 +999,8 @@ createApp({
          */
         const applyDisturbance = (type, x = null, y = null) => {
             if (!simulator.value) return;
-            const cx = x !== null ? x : CONFIG.gridWidth / 2;
-            const cy = y !== null ? y : CONFIG.gridHeight / 2;
+            const cx = x !== null ? x : Math.floor(CONFIG.gridWidth / 2);
+            const cy = y !== null ? y : Math.floor(CONFIG.gridHeight / 2);
             let radius = 5;
             if (type === 'fire') {
                 radius = 5;
@@ -1017,6 +1032,11 @@ createApp({
 
             init();
             requestAnimationFrame(loop);
+        });
+
+        // B2: Vue 更新后重新渲染 Lucide 图标 (解决 play/pause 切换不刷新问题)
+        onUpdated(() => {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         });
 
         return {
