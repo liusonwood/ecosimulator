@@ -74,11 +74,12 @@
                 <!-- 运行控制 -->
                 <div class="flex items-center gap-4">
                     <button @click="togglePlay" class="flex-1 bg-white/10 hover:bg-white/20 p-3 rounded-xl flex items-center justify-center gap-2 transition-all">
-                        <i :data-lucide="state.running ? 'pause' : 'play'" class="w-5 h-5"></i>
+                        <!-- 使用本地 SVG 文件，通过 Vue 动态绑定 src 确保图标随状态精准刷新 -->
+                        <img :src="state.running ? './lib/pause.svg' : './lib/play.svg'" class="w-5 h-5" alt="Play/Pause">
                         <span class="font-bold text-base">{{ state.running ? '暂停' : '开始' }}</span>
                     </button>
                     <button @click="reset" class="p-3 rounded-xl bg-white/5 hover:bg-red-500/20 transition-all">
-                        <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                        <img src="./lib/rotate-ccw.svg" class="w-5 h-5" alt="Reset">
                     </button>
                 </div>
 
@@ -90,9 +91,9 @@
                 <!-- 速度调节 -->
                 <div>
                     <div class="flex justify-between text-xs uppercase tracking-widest text-white/40 mb-2">
-                        <i data-lucide="turtle" class="w-4 h-4"></i>
+                        <img src="./lib/turtle.svg" class="w-4 h-4" alt="Slow">
                         <span>演替速度</span>
-                        <i data-lucide="rabbit" class="w-4 h-4"></i>
+                        <img src="./lib/rabbit.svg" class="w-4 h-4" alt="Fast">
                     </div>
                     <input type="range" v-model.number="state.speed" min="0.1" max="5" step="0.1" class="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer">
                 </div>
@@ -145,16 +146,8 @@
     <script src="./lib/vue.global.prod.js" onerror="var s=document.createElement('script');s.src='https://unpkg.com/vue@3/dist/vue.global.prod.js';document.body.appendChild(s);"></script>
     <script src="./lib/gpu-browser.min.js" onerror="var s=document.createElement('script');s.src='https://unpkg.com/gpu.js@latest/dist/gpu-browser.min.js';document.body.appendChild(s);"></script>
     <script src="./lib/chart.js" onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/chart.js/dist/chart.min.js';document.body.appendChild(s);"></script>
-    <script src="./lib/lucide.min.js" onerror="var s=document.createElement('script');s.src='https://unpkg.com/lucide@latest/dist/umd/lucide.min.js';document.body.appendChild(s);"></script>
     
     <!-- 业务代码 -->
     <script src="main.js"></script>
-    
-    <script>
-        // 首次加载初始化图标 (后续由 Vue onUpdated 钩子自动刷新)
-        window.addEventListener('load', () => {
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-        });
-    </script>
 </body>
 </html>

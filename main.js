@@ -1034,11 +1034,6 @@ createApp({
             requestAnimationFrame(loop);
         });
 
-        // B2: Vue 更新后重新渲染 Lucide 图标 (解决 play/pause 切换不刷新问题)
-        onUpdated(() => {
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-        });
-
         return {
             simulator, canvasRef, chartRef, state, climates,
             togglePlay, reset, handleCanvasClick, handleMouseMove, applyDisturbance,
